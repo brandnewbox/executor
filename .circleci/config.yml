@@ -1,0 +1,19 @@
+version: 2.1
+
+orbs:
+  drydock: brandnewbox/drydock@2.2.5
+
+workflows:
+  publish:
+    jobs:
+      - drydock/build-and-push:
+          name: publish-image
+          built-image: registry.digitalocean.com/brandnewbox/executor:${CIRCLE_TAG}
+          build-target: runtime
+          dockerfile-path: ./Dockerfile
+          context: DO_BNB_REGISTRY
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/
