@@ -17,4 +17,4 @@ git tag v1.6.8-bnb.1
 git push origin v1.6.8-bnb.1
 ```
 
-The image workflow publishes that tag and `latest` for both AMD64 and ARM64.
+The image workflow publishes that tag and `latest` for AMD64.
