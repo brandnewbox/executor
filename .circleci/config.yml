@@ -17,3 +17,19 @@ workflows:
               ignore: /.*/
             tags:
               only: /^v.*/
+      - drydock/create-deployment:
+          name: deploy-image
+          rancher-context: c-tmnrk:p-l87zj
+          rancher-namespace: executor
+          rancher-deployment: executor
+          rancher-container: executor
+          image: registry.digitalocean.com/brandnewbox/executor:${CIRCLE_TAG}
+          should-update-credentials: false
+          context: DO_BNB_REGISTRY
+          requires:
+            - publish-image
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/

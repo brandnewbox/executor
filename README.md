@@ -17,4 +17,4 @@ git tag v1.6.8-bnb.1
 git push origin v1.6.8-bnb.1
 ```
 
-CircleCI publishes the tagged AMD64 image to the Brand New Box DigitalOcean registry.
+CircleCI publishes the tagged AMD64 image to the Brand New Box DigitalOcean registry, refreshes the namespace's registry credentials, and deploys the release to the shared cluster with Drydock.
