@@ -35,6 +35,7 @@ ENV NODE_ENV=production \
     EXECUTOR_DATA_DIR=/data
 COPY --from=prod-deps /usr/local/bin/bun /usr/local/bin/bun
 COPY --from=prod-deps /app/.selfhost-runtime /app
+COPY --from=prod-deps /app/node_modules/.bun/node_modules/@1password/sdk-core/nodejs/core_bg.wasm /usr/local/bin/onepassword-core_bg.wasm
 COPY --from=build /app/apps/host-selfhost/dist /app/apps/host-selfhost/dist
 WORKDIR /app/apps/host-selfhost
 VOLUME ["/data"]
