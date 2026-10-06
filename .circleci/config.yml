@@ -33,3 +33,33 @@ workflows:
               ignore: /.*/
             tags:
               only: /^v.*/
+
+  publish-rancher-auth:
+    jobs:
+      - drydock/build-and-push:
+          name: publish-rancher-auth-image
+          built-image: registry.digitalocean.com/brandnewbox/executor-rancher-auth:${CIRCLE_TAG}
+          build-target: runtime
+          dockerfile-path: ./rancher-auth/Dockerfile
+          context: DO_BNB_REGISTRY
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^rancher-auth-v.*/
+      - drydock/create-deployment:
+          name: deploy-rancher-auth-image
+          rancher-context: c-tmnrk:p-l87zj
+          rancher-namespace: executor
+          rancher-deployment: rancher-auth
+          rancher-container: rancher-auth
+          image: registry.digitalocean.com/brandnewbox/executor-rancher-auth:${CIRCLE_TAG}
+          should-update-credentials: false
+          context: DO_BNB_REGISTRY
+          requires:
+            - publish-rancher-auth-image
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^rancher-auth-v.*/
