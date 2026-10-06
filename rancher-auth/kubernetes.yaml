@@ -1,0 +1,119 @@
+# rancher-auth in the executor namespace on the shared cluster (c-tmnrk).
+# Secrets live in the rancher-auth-env Secret (RANCHER_CLIENT_SECRET,
+# EXECUTOR_CLIENT_SECRET, SEALING_KEY), created by hand; see README.md.
+# CircleCI only updates the image; apply this file for anything else.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rancher-auth
+  namespace: executor
+  labels:
+    app: rancher-auth
+spec:
+  # One replica: redeemed authorization codes are remembered in memory.
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: rancher-auth
+  template:
+    metadata:
+      labels:
+        app: rancher-auth
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: rancher-auth
+          image: registry.digitalocean.com/brandnewbox/executor-rancher-auth:rancher-auth-v1
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: PUBLIC_URL
+              value: https://executor.brandnewops.com/rancher-auth
+            - name: RANCHER_URL
+              value: https://rancher2.brandnewops.com
+            - name: RANCHER_CLIENT_ID
+              value: client-fjg557kg7d
+            - name: EXECUTOR_CLIENT_ID
+              value: executor
+            - name: EXECUTOR_REDIRECT_URI
+              value: https://executor.brandnewops.com/api/oauth/callback
+          envFrom:
+            - secretRef:
+                name: rancher-auth-env
+          readinessProbe:
+            httpGet:
+              path: /rancher-auth/healthz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /rancher-auth/healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rancher-auth
+  namespace: executor
+spec:
+  selector:
+    app: rancher-auth
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+# A second ingress on Executor's host. ingress-nginx merges it with the
+# executor ingress, and the longer /rancher-auth prefix wins over Executor's /.
+# TLS reuses the certificate cert-manager issues for the executor ingress.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rancher-auth
+  namespace: executor
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: executor.brandnewops.com
+      http:
+        paths:
+          - path: /rancher-auth
+            pathType: Prefix
+            backend:
+              service:
+                name: rancher-auth
+                port:
+                  name: http
+  tls:
+    - hosts:
+        - executor.brandnewops.com
+      secretName: executor-tls

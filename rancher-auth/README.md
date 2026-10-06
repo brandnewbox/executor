@@ -65,3 +65,22 @@ git push origin rancher-auth-v1
 ```
 
 CircleCI builds `registry.digitalocean.com/brandnewbox/executor-rancher-auth:<tag>` from `rancher-auth/Dockerfile` and updates the `rancher-auth` Deployment in the `executor` namespace with Drydock. Executor's own `v*` tags don't build the proxy, and the proxy's tags don't build Executor.
+
+## Deployment
+
+`kubernetes.yaml` has the Deployment, Service and Ingress (path `/rancher-auth` on `executor.brandnewops.com`, in the `executor` namespace on c-tmnrk). CircleCI only changes the image, so apply the file by hand for anything else:
+
+```sh
+kubectl apply -f rancher-auth/kubernetes.yaml
+```
+
+Secrets are in the `rancher-auth-env` Secret, created once by hand:
+
+```sh
+kubectl -n executor create secret generic rancher-auth-env \
+  --from-literal=RANCHER_CLIENT_SECRET=<from Rancher, see services/rancher2.md in brandnewbox/devops> \
+  --from-literal=EXECUTOR_CLIENT_SECRET="$(openssl rand -base64 36 | tr '+/' '-_' | tr -d '=')" \
+  --from-literal=SEALING_KEY="$(openssl rand -base64 32)"
+```
+
+Executor's workspace OAuth app uses client ID `executor` and the `EXECUTOR_CLIENT_SECRET` value.
