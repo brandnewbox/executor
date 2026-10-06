@@ -18,3 +18,7 @@ git push origin v1.6.8-bnb.1
 ```
 
 CircleCI publishes the tagged AMD64 image to the Brand New Box DigitalOcean registry, refreshes the namespace's registry credentials, and deploys the release to the shared cluster with Drydock.
+
+## Rancher sign-in proxy
+
+`rancher-auth/` is a separate service that Executor's Rancher Kubernetes integration signs in through, so connections get long-lived, rolling Rancher API tokens instead of tokens tied to a 16-hour Rancher session. It has its own image and release tags; see [rancher-auth/README.md](rancher-auth/README.md).
