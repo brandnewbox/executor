@@ -68,19 +68,6 @@ CircleCI builds `registry.digitalocean.com/brandnewbox/executor-rancher-auth:<ta
 
 ## Deployment
 
-`kubernetes.yaml` has the Deployment, Service and Ingress (path `/rancher-auth` on `executor.brandnewops.com`, in the `executor` namespace on c-tmnrk). CircleCI only changes the image, so apply the file by hand for anything else:
+The Deployment, Service, Ingress (path `/rancher-auth` on `executor.brandnewops.com`) and `rancher-auth-env` Secret are managed by Terraform in [brandnewbox-shared-stack](https://github.com/brandnewbox/brandnewbox-shared-stack) (`rancher-auth.tf`), in the `executor` namespace on c-tmnrk. CircleCI only changes the image; change anything else there.
 
-```sh
-kubectl apply -f rancher-auth/kubernetes.yaml
-```
-
-Secrets are in the `rancher-auth-env` Secret, created once by hand:
-
-```sh
-kubectl -n executor create secret generic rancher-auth-env \
-  --from-literal=RANCHER_CLIENT_SECRET=<from Rancher, see services/rancher2.md in brandnewbox/devops> \
-  --from-literal=EXECUTOR_CLIENT_SECRET="$(openssl rand -base64 36 | tr '+/' '-_' | tr -d '=')" \
-  --from-literal=SEALING_KEY="$(openssl rand -base64 32)"
-```
-
-Executor's workspace OAuth app uses client ID `executor` and the `EXECUTOR_CLIENT_SECRET` value.
+The Secret's values come from that repo's `RANCHER_AUTH_RANCHER_CLIENT_SECRET`, `RANCHER_AUTH_EXECUTOR_CLIENT_SECRET` and `RANCHER_AUTH_SEALING_KEY` secrets. Executor's workspace OAuth app uses client ID `executor` and the `RANCHER_AUTH_EXECUTOR_CLIENT_SECRET` value.
