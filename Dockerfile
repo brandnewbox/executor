@@ -1,22 +1,25 @@
-ARG EXECUTOR_VERSION=v1.6.8
+ARG EXECUTOR_VERSION=v1.6.10
 
 FROM alpine/git:2.49.1 AS upstream
 ARG EXECUTOR_VERSION
 RUN git clone --depth 1 --branch "${EXECUTOR_VERSION}" https://github.com/UsefulSoftwareCo/executor.git /executor
 
-FROM oven/bun:1 AS source
+FROM oven/bun:1.3.11@sha256:0733e50325078969732ebe3b15ce4c4be5082f18c4ac1a0f0ca4839c2e4e42a7 AS source
 WORKDIR /src
 COPY --from=upstream /executor .
 COPY executor.config.ts apps/host-selfhost/executor.config.ts
 RUN bun -e 'const path = "apps/host-selfhost/package.json"; const pkg = await Bun.file(path).json(); pkg.dependencies["@executor-js/plugin-onepassword"] = "workspace:*"; await Bun.write(path, JSON.stringify(pkg, null, 2) + "\n");'
 
-FROM oven/bun:1 AS prod-deps
+FROM oven/bun:1.3.11@sha256:0733e50325078969732ebe3b15ce4c4be5082f18c4ac1a0f0ca4839c2e4e42a7 AS prod-deps
 WORKDIR /app
 COPY --from=source /src .
 RUN bun install --production --ignore-scripts --filter @executor-js/host-selfhost \
   && bun run apps/host-selfhost/scripts/package-runtime.ts
 
-FROM oven/bun:1 AS build
+FROM oven/bun:1.3.11@sha256:0733e50325078969732ebe3b15ce4c4be5082f18c4ac1a0f0ca4839c2e4e42a7 AS build
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=source /src .
 RUN bun install
