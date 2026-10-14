@@ -26,7 +26,10 @@ All paths are under the `PUBLIC_URL` path, e.g. `https://executor.brandnewops.co
 | `GET /authorize` | OAuth authorization endpoint for Executor. Requires PKCE (`S256`). |
 | `GET /callback` | Rancher's redirect URI. |
 | `POST /token` | OAuth token endpoint. `authorization_code` and `refresh_token` grants. Client secret in the body or HTTP Basic. |
+| `GET /.well-known/oauth-authorization-server`, `GET /.well-known/openid-configuration` | Authorization server metadata (RFC 8414), so Executor can discover the proxy from an MCP server that names it as its authorization server. |
 | `GET /healthz` | Returns `ok`. |
+
+The proxy has no `registration_endpoint`: when an MCP integration (such as [bnb-mcp](https://github.com/brandnewbox/bnb-mcp)) discovers it, pick the existing Rancher OAuth app instead of registering a new client.
 
 When Rancher rejects the refresh credential (deleted, expired, or the person lost access), `/token` returns `invalid_grant` and Executor asks the person to reconnect. When Rancher is unreachable it returns `503 temporarily_unavailable`, and Executor keeps the connection.
 

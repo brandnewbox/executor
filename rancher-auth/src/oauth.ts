@@ -132,6 +132,22 @@ export function createHandler(config: Config) {
     return tokenResponse(await renewGrant(rancher, grant, config));
   }
 
+  // RFC 8414 metadata, so clients that discover their authorization server
+  // (Executor's MCP integrations) can find these endpoints. Mounted under a path
+  // on Executor's host, only the path-appended well-known URLs reach the proxy;
+  // Executor and other MCP clients try openid-configuration there.
+  function metadata(): Response {
+    return Response.json({
+      issuer: String(config.publicUrl),
+      authorization_endpoint: `${config.publicUrl}/authorize`,
+      token_endpoint: `${config.publicUrl}/token`,
+      response_types_supported: ["code"],
+      grant_types_supported: ["authorization_code", "refresh_token"],
+      code_challenge_methods_supported: ["S256"],
+      token_endpoint_auth_methods_supported: ["client_secret_post", "client_secret_basic"],
+    });
+  }
+
   function tokenResponse({ grant, access }: IssuedGrant): Response {
     return Response.json(
       {
@@ -176,6 +192,9 @@ export function createHandler(config: Config) {
     if (req.method === "GET" && path === "/callback") return callback(url);
     if (req.method === "POST" && path === "/token") return token(req);
     if (req.method === "GET" && path === "/healthz") return text(200, "ok");
+    if (req.method === "GET" && (path === "/.well-known/oauth-authorization-server" || path === "/.well-known/openid-configuration")) {
+      return metadata();
+    }
     return text(404, "Not found.");
   };
 }

@@ -75,6 +75,22 @@ function refresh(refreshToken: string) {
 
 const tokenNameOf = (bearer: string) => bearer.slice(4).split(":")[0];
 
+describe("discovery", () => {
+  test("publishes authorization server metadata where Executor looks for a path-mounted issuer", async () => {
+    const res = await handle(new Request(`${PUBLIC_URL}/.well-known/openid-configuration`));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      issuer: PUBLIC_URL,
+      authorization_endpoint: `${PUBLIC_URL}/authorize`,
+      token_endpoint: `${PUBLIC_URL}/token`,
+      response_types_supported: ["code"],
+      grant_types_supported: ["authorization_code", "refresh_token"],
+      code_challenge_methods_supported: ["S256"],
+      token_endpoint_auth_methods_supported: ["client_secret_post", "client_secret_basic"],
+    });
+  });
+});
+
 describe("sign-in", () => {
   test("gives Executor a Rancher API token that outlives the Rancher login session", async () => {
     const toRancher = await handle(new Request(authorizeUrl()));
